@@ -319,3 +319,40 @@ class ParserTest(TestCase):
             assert expression_statement is not None
             self._test_literal_expression(expression_statement.expression, expected_value)
     
+    '''
+        1str: programa inicial, 
+        2str: Orden de precedencia dentro del programa
+        int: Cuantos statements se espera del programa
+    '''
+
+    def test_operator_precedence(self) -> None:
+        test_sources: list[tuple[str, str, int]] = [
+            ('-a * b;', '((-a) * b)', 1),
+            ('!-a;', '(!(-a))', 1),
+            ('a + b + c;', '((a + b) + c)', 1),
+            ('a + b - c;', '((a + b) - c)', 1),
+            ('a * b * c;', '((a * b) * c)', 1),
+            ('a + b / c;', '(a + (b / c))', 1),
+            ('a * b / c;', '((a * b) / c)', 1),
+            ('a + b * c + d / e - f;', '(((a + (b * c)) + (d / e)) - f)', 1),
+            ('5 > 4 == 3 < 4;', '((5 > 4) == (3 < 4))', 1),
+            ('3 - 4 * 5 == 3 * 1 + 4 * 5;', '((3 - (4 * 5)) == ((3 * 1) + (4 * 5)))', 1),
+            ('3 + 4; -5 * 5;', '(3 + 4)((-5) * 5)', 2),
+            ('verdadero;', 'verdadero', 1),
+            ('falso;', 'falso', 1),
+            ('3 > 5 == verdadero;', '((3 > 5) == verdadero)', 1),
+            ('3 < 5 == falso;', '((3 < 5) == falso)', 1),
+            ('1 + (2 + 3) + 4;', '((1 + (2 + 3)) + 4)', 1),
+            ('(5 + 5) * 2;', '((5 + 5) * 2)', 1),
+            ('2 / (5 + 5);', '(2 / (5 + 5))', 1),
+            ('-(5 + 5);', '(-(5 + 5))', 1),
+        ]
+
+        for source, expected_result, expected_statement_count in test_sources:
+            lexer: Lexer = Lexer(source)
+            parser: Parser = Parser(lexer)
+
+            program: Program = parser.parse_program()
+
+            self._test_program_statements(parser, program, expected_statement_count)
+            self.assertEquals(str(program), expected_result)
