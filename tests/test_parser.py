@@ -365,6 +365,7 @@ class ParserTest(TestCase):
             Entonces {
                 x;
             }
+        FinSi
         '''
         lexer: Lexer = Lexer(source)
         parser: Parser = Parser(lexer)
@@ -409,6 +410,7 @@ class ParserTest(TestCase):
             } Sino {
                 y;
             }
+        FinSi
         '''
         lexer: Lexer = Lexer(source)
         parser: Parser = Parser(lexer)

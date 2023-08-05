@@ -350,6 +350,9 @@ class Parser:
 
             if_expression.alternative = self._parse_block()
 
+        if not self._expected_token(TokenType.ENDIF):
+            return None
+
         return if_expression
 
 
