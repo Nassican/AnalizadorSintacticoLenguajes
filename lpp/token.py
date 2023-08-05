@@ -60,6 +60,9 @@ class TokenType(Enum):
     READ = auto()
     WRITE = auto()
     #--------------------------------
+    SOP = auto()
+    EOP = auto()
+    #--------------------------------
 
 
 
@@ -112,12 +115,16 @@ def lookup_token_type(literal: str) -> TokenType:
         #--------------------ACCIONES----------------------------------
         'Leer': TokenType.READ,             # OK
         'Escribir': TokenType.WRITE,         # OK
+        #--------------------PROGRAMA----------------------------------
+        'Programa': TokenType.SOP,
+        'FinPrograma': TokenType.EOP,
+
     }
 
     '''
 
-    ----        Programa
-    ----        FinPrograma   -> Podria ser EOF o EOP.
+    OK      Programa      -> Es SOP
+    OK      FinPrograma   -> Es EOP.
 
     OK      Tipo -> Real, Entero, Double, Float, String
     OK      Leer
