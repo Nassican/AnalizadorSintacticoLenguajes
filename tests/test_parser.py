@@ -11,7 +11,9 @@ from lpp.ast import (
     Infix,
     Boolean,
     Block,
-    If
+    If,
+    While,
+    Forto,
 )
 from lpp.lexer import Lexer
 from lpp.parser import Parser
@@ -267,6 +269,7 @@ class ParserTest(TestCase):
             (5, '<', 5),
             (5, '==', 5),
             (5, '!=', 5),
+            (5, '=', 5),
         ]
 
         for statement, (expected_left, expected_operator, expected_right) in zip(
@@ -361,12 +364,12 @@ class ParserTest(TestCase):
 
     def test_if_expression(self) -> None:
         source: str = ''' 
-        Si ( x < y )
-            Entonces {
-                x;
+        Si (a > b) Entonces {
+            c;
             }
-        FinSi
+		FinSi
         '''
+        # cambiar c; por a=b+c;
         lexer: Lexer = Lexer(source)
         parser: Parser = Parser(lexer)
 
@@ -381,7 +384,7 @@ class ParserTest(TestCase):
 
         # Comprobamos la condicion
         assert if_expression.condition is not None
-        self._test_infix_expression(if_expression.condition, 'x', '<', 'y')
+        self._test_infix_expression(if_expression.condition, 'a', '>', 'b')
 
         # Comprobamos la consecuencia
         assert if_expression.consequence is not None
@@ -392,7 +395,7 @@ class ParserTest(TestCase):
                                      if_expression.consequence.statements[0])
         
         assert consequence_statement.expression is not None
-        self._test_identifier(consequence_statement.expression, 'x')
+        self._test_identifier(consequence_statement.expression, 'c')
 
         # Comprobamos la alternativa
         # Nos aseguramos que sea None, que no existe alternativa (Sino)
@@ -409,7 +412,7 @@ class ParserTest(TestCase):
                 x;
             } Sino {
                 y;
-            }
+            } 
         FinSi
         '''
         lexer: Lexer = Lexer(source)
@@ -444,6 +447,66 @@ class ParserTest(TestCase):
         alternative_statement = cast(ExpressionStatement, if_expression.alternative.statements[0])
         assert alternative_statement.expression is not None
         self._test_identifier(alternative_statement.expression, 'y')
+
+    def test_while_expression(self) -> None:
+        source: str = '''
+        Mientras (x < y) hacer
+            x;
+        FinMientras
+        '''
+        lexer: Lexer = Lexer(source)
+        parser: Parser = Parser(lexer)
+
+        program: Program = parser.parse_program()
+
+        self._test_program_statements(parser, program)
+
+        # Test correct node type
+        while_expression = cast(While, cast(ExpressionStatement, program.statements[0]).expression)
+        self.assertIsInstance(while_expression, While)
+
+        # Test condition
+        assert while_expression.condition is not None
+        self._test_infix_expression(while_expression.condition, 'x', '<', 'y')
+
+        # Test Actions
+        assert while_expression.actions is not None
+        self.assertIsInstance(while_expression.actions, Block)
+        self.assertEquals(len(while_expression.actions.statements), 1)
+
+        action_statement = cast(ExpressionStatement, while_expression.actions.statements[0])
+        assert action_statement.expression is not None
+        self._test_identifier(action_statement.expression, 'x')
+
+    def test_for_expression(self) -> None:
+        source: str = '''
+        Para a = c hasta b
+	        a;
+        FinPara
+        '''
+
+        lexer: Lexer = Lexer(source)
+        parser: Parser = Parser(lexer)
+
+        program: Program = parser.parse_program()
+
+        self._test_program_statements(parser, program)
+
+        # Test correct node type
+        forto_expression = cast(Forto, cast(ExpressionStatement, program.statements[0]).expression)
+        self.assertIsInstance(forto_expression, Forto)
+
+        # Test condition
+        assert forto_expression.start is not None
+        self._test_infix_expression(forto_expression.start, 'a', '*', 'c')
+
+        # Test Actions
+        assert forto_expression.end is not None
+        self._test_literal_expression(forto_expression.end, 'b')
+
+        body_statement = cast(ExpressionStatement, forto_expression.body.statements[0])
+        assert body_statement.expression is not None
+        self._test_identifier(body_statement.expression, 'a')
 
 
 

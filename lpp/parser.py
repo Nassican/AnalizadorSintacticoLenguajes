@@ -12,6 +12,8 @@ from lpp.ast import (
     Boolean,
     Block,
     If,
+    While,
+    Forto,
     )
 from lpp.lexer import Lexer
 from lpp.token import TokenType, Token
@@ -61,6 +63,7 @@ PRECEDENCES: dict[TokenType, Precedence] = {
     TokenType.MINUS: Precedence.SUM,
     TokenType.DIVIDE: Precedence.PRODUCT,
     TokenType.MULT: Precedence.PRODUCT,
+    TokenType.ASSIGN: Precedence.CALL,
 }
 
 
@@ -186,11 +189,15 @@ class Parser:
         
         # TODO terminar cuando sepa parsear expresiones
 
-        # Avanzamos hasta que llegue a ';' (Hasta que termine)
-        while self._current_token.token_type != TokenType.SEMICOLON:
-            self._advance_tokens()
+        self._advance_tokens()
+        let_statement.value = self._parse_expression(Precedence.LOWEST)
+
+        assert self._peek_token is not None
+        if self._peek_token.token_type == TokenType.SEMICOLON:
+            self._advance_tokens() # Avanzamos uno mas adelante para terminar de parsear
 
         return let_statement
+
 
     def _parse_statement(self) -> Optional[Statement]:
         assert self._current_token is not None
@@ -250,7 +257,8 @@ class Parser:
 
         return prefix_expression
     
-    def _parse_infix_expression(self, left: Expression) -> Infix:
+    def _parse_infix_expression(self, 
+                                left: Expression) -> Infix:
         assert self._current_token is not None
         infix = Infix(token=self._current_token,
                       operator=self._current_token.literal,
@@ -312,6 +320,44 @@ class Parser:
             self._advance_tokens()
 
         return block_statement
+    
+    def _parse_block_while(self) -> Block:
+        assert self._current_token is not None
+        block_statement = Block(token=self._current_token,
+                                statements=[])
+        
+        self._advance_tokens()
+
+        # Mientras el token siguiente no sea }
+        while not self._current_token.token_type == TokenType.ENDWHILE \
+                    and not self._current_token.token_type == TokenType.EOF:
+            statement = self._parse_statement()
+
+            if statement:
+                block_statement.statements.append(statement)
+
+            self._advance_tokens()
+
+        return block_statement
+    
+    def _parse_block_forto(self) -> Block:
+        assert self._current_token is not None
+        block_statement = Block(token=self._current_token,
+                                statements=[])
+        
+        self._advance_tokens()
+
+        # Mientras el token siguiente no sea }
+        while not self._current_token.token_type == TokenType.ENDFOR \
+                    and not self._current_token.token_type == TokenType.EOF:
+            statement = self._parse_statement()
+
+            if statement:
+                block_statement.statements.append(statement)
+
+            self._advance_tokens()
+
+        return block_statement
 
 
     def _parse_if(self) -> Optional[If]:
@@ -354,6 +400,54 @@ class Parser:
             return None
 
         return if_expression
+    
+    def _parse_while(self) -> Optional[While]:
+        assert self._current_token is not None
+        while_expression = While(token=self._current_token)
+
+        # Comprobamos que el token esperado sea un ( despues del si
+        # en caso contrario habria un error de sintaxis
+        if not self._expected_token(TokenType.LPAREN):
+            return None
+        
+        self._advance_tokens()
+
+        while_expression.condition = self._parse_expression(Precedence.LOWEST)
+
+        # Comprobamos que se cerro el parentesis )
+        if not self._expected_token(TokenType.RPAREN):
+            return None
+        
+        if not self._expected_token(TokenType.DO):
+            return None
+        
+        while_expression.actions = self._parse_block_while()
+
+        return while_expression
+    
+    def _parse_forto(self) -> Optional[Forto]:
+        assert self._current_token is not None
+        forto_expression = Forto(token=self._current_token)
+
+        # Comprobamos que el token esperado sea un ( despues del si
+        # en caso contrario habria un error de sintaxis
+        assert self._peek_token is not None
+        self._advance_tokens()
+
+        forto_expression.start = self._parse_expression(Precedence.LOWEST)
+
+        if not self._expected_token(TokenType.TO):
+            return None
+        self._advance_tokens()
+
+        forto_expression.end = self._parse_expression(Precedence.LOWEST)
+
+
+
+        assert self._peek_token is not None
+        forto_expression.body = self._parse_block_forto()
+
+        return forto_expression
 
 
     def _register_infix_parse_fns(self) -> InfixParseFns:
@@ -363,6 +457,7 @@ class Parser:
             TokenType.DIVIDE: self._parse_infix_expression,
             TokenType.MULT: self._parse_infix_expression,
             TokenType.EQUALS: self._parse_infix_expression,
+            TokenType.ASSIGN: self._parse_infix_expression,
             TokenType.NOTEQUALS: self._parse_infix_expression,
             TokenType.LT: self._parse_infix_expression,
             TokenType.MT: self._parse_infix_expression,
@@ -383,8 +478,8 @@ class Parser:
             # TokenType.DO: self.--------------------------,
             TokenType.IF: self._parse_if,
             TokenType.LBRACE: self._parse_if,
-            # TokenType.DO: self.--------------------------,
-            # TokenType.DO: self.--------------------------,
+            TokenType.WHILE: self._parse_while,
+            TokenType.FOR: self._parse_forto,
 
         }
 

@@ -86,7 +86,10 @@ class Identifier(Expression):
 
 
 class LetStatement(Statement):
-    def __init__(self, token: Token, name: Optional[Identifier] = None, value: Optional[Expression] = None) -> None:
+    def __init__(self, 
+                 token: Token, 
+                 name: Optional[Identifier] = None, 
+                 value: Optional[Expression] = None) -> None:
         # Estamos extendiendo Statement
         super().__init__(token)
         self.name = name
@@ -94,6 +97,17 @@ class LetStatement(Statement):
 
     def __str__(self) -> str:
         return f'{self.token_literal()} {str(self.name)} = {str(self.value)};'
+    
+class LetAsignment(Statement):
+    def __init__(self, 
+                 token: Token, 
+                 value: Optional[Expression] = None) -> None:
+        # Estamos extendiendo Statement
+        super().__init__(token)
+        self.value = value
+
+    def __str__(self) -> str:
+        return f'{self.token_literal()} = {str(self.value)};'
 
 
 class ReturnStatement(Statement):
@@ -193,12 +207,43 @@ class If(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Si {str(self.condition)} Entonces {str(self.consequence)}'
+        out: str = f'Si {str(self.condition)} Entonces {str(self.consequence)} '
         # Si hay una alternativa lo concatenamos
         if self.alternative:
-            out += f'Sino {str(self.alternative)}'
+            out += f'Sino {str(self.alternative)} FinSi'
         elif not self.alternative:
             out += f'FinSi'
 
         return ''.join(out)
+    
+class While(Expression):
+    def __init__(self,
+                 token: Token,
+                 condition: Optional[Expression] = None,
+                 actions: Optional[Block] = None) -> None:
+        super().__init__(token)
+        self.condition = condition 
+        self.actions = actions
+              
 
+    def __str__(self) -> str:
+        out: str = f'Mientras {str(self.condition)} hacer {str(self.actions)} FinMientras'
+
+        return ''.join(out)
+
+class Forto(Expression):
+    def __init__(self,
+                 token: Token,
+                 start: Optional[LetStatement] = None,
+                 end: Optional[Expression] = None,
+                 body: Optional[Block] = None) -> None:
+        super().__init__(token)
+        self.start = start 
+        self.end = end
+        self.body = body
+              
+
+    def __str__(self) -> str:
+        out: str = f'Para {str(self.start)} hasta {str(self.end)} hacer {str(self.body)} FinPara'
+
+        return ''.join(out)
