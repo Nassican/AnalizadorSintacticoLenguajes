@@ -25,4 +25,6 @@ variable <identifier> =  <expression>;  # Statement
 # LetStateMent -> Es un caso especifico de un statement
 
 
+Si (x != y) Entonces x; Sino y; FinSi
+
 '''

@@ -364,9 +364,8 @@ class ParserTest(TestCase):
 
     def test_if_expression(self) -> None:
         source: str = ''' 
-        Si (a > b) Entonces {
+        Si (a > b) Entonces
             c;
-            }
 		FinSi
         '''
         # cambiar c; por a=b+c;
@@ -408,11 +407,10 @@ class ParserTest(TestCase):
     def test_if_else_expression(self) -> None:
         source: str = '''
         Si (x != y) 
-            Entonces {
+            Entonces
                 x;
-            } Sino {
+             Sino 
                 y;
-            } 
         FinSi
         '''
         lexer: Lexer = Lexer(source)
@@ -507,21 +505,6 @@ class ParserTest(TestCase):
         body_statement = cast(ExpressionStatement, forto_expression.body.statements[0])
         assert body_statement.expression is not None
         self._test_identifier(body_statement.expression, 'a')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
