@@ -66,7 +66,8 @@ PRECEDENCES: dict[TokenType, Precedence] = {
     TokenType.MINUS: Precedence.SUM,
     TokenType.DIVIDE: Precedence.PRODUCT,
     TokenType.MULT: Precedence.PRODUCT,
-    TokenType.ASSIGN: Precedence.CALL,
+    TokenType.ASSIGN: Precedence.EQUALS,
+    TokenType.COLON: Precedence.EQUALS,
 }
 
 
@@ -337,7 +338,7 @@ class Parser:
                                 statements=[])
         self._advance_tokens()
 
-        # Mientras el token siguiente no sea FinMientras 
+        # Mientras el token actual no sea FinMientras 
         while not (self._current_token.token_type == TokenType.ELSE or self._current_token.token_type == TokenType.ENDIF) \
             and not self._current_token.token_type == TokenType.EOF:
             statement = self._parse_statement()
@@ -546,60 +547,22 @@ class Parser:
         if not self._expected_token(TokenType.DO):
             return None
         
-        asper.options = self._parse_block_asper_options()    
-        
-        return asper
-    
-    def _parse_asper_options(self) -> dict:
-        options = {}
+        asper.options = self._parse_block_asper_options()  
 
-        assert self._peek_token is not None
-
-        if self._peek_token.token_type == TokenType.ENDASPER:
-            self._advance_tokens()
-            
-            return options
-        
-        if self._peek_token.token_type == TokenType.OTHERMODE:
-            self._advance_tokens()
-
-            return options
-        
-        self._advance_tokens()
-        
         assert self._current_token is not None
 
-        identifier = Identifier(token=self._current_token,
-                                value=self._current_token.literal)
-        
-        assert self._peek_token is not None
+        if self._current_token.token_type == TokenType.OTHERMODE:
+            asper.otherMode = self._parse_block_asper_othermode()
 
-        if not self._expected_token(TokenType.COLON):
-            return None
-        
-        self._advance_tokens()
-
-        expression = self._parse_expression(Precedence.LOWEST)
-        options[str(identifier)] = str(expression)
-        print(options)
-
-        while self._peek_token.token_type == TokenType.IDENT and self._peek_token.token_type == TokenType.COLON:
-            # self._advance_tokens() # Avanzamos la comma
-            # self._advance_tokens() # Avanzamos al siguiente identificador
-
-            identifier = Identifier(token=self._current_token,
-                                    value=self._current_token.literal)
-            assert self._peek_token is not None
-            if not self._expected_token(TokenType.COLON):
+            if not self._expected_current_token(TokenType.ENDASPER):
                 return None
-            self._advance_tokens()
-            expression = self._parse_expression(Precedence.LOWEST)
-            options.append(identifier, expression)
 
-        if not (self._expected_token(TokenType.ENDASPER) or self._expected_token(TokenType.OTHERMODE)):
-            return []
+            return asper
+            
+        if not self._expected_current_token(TokenType.ENDASPER):
+            return None  
         
-        return options
+        return asper
     
     def _parse_block_asper_options(self) -> Block:
         assert self._current_token is not None
@@ -609,17 +572,57 @@ class Parser:
         self._advance_tokens()
 
         # Mientras el token siguiente no sea }
-        while not self._current_token.token_type == TokenType.ENDASPER \
+        while not (self._current_token.token_type == TokenType.ENDASPER or self._current_token.token_type == TokenType.OTHERMODE)\
                     and not self._current_token.token_type == TokenType.EOF:
             
+            assert self._current_token is not None
+            # Comprueba que la opcion sea solo de tipo Entero
+            if not self._expected_current_token(TokenType.INT):
+                return None
             
             statement = self._parse_statement()
-            print(statement)
             if statement:
                 block_statement.statements.append(statement)
-            print(self._current_token)
+
+            self._advance_tokens()
+
+            # Comprueba que despues del tipo Entero habia un :
+            # if self._current_token.token_type == TokenType.COLON:
+            #     block_statement.statements.append(':')
+            #     self._advance_tokens()
+            if not self._expected_current_token(TokenType.COLON):
+                return None
+            
+            block_statement.statements.append(':')
+            self._advance_tokens()
+
+            assert self._current_token is not None
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+            
             self._advance_tokens()
             
+
+        return block_statement
+    
+    def _parse_block_asper_othermode(self) -> Block:
+        assert self._current_token is not None
+        block_statement = Block(token=self._current_token,
+                                statements=[])
+        
+        if not self._expected_token(TokenType.COLON):
+            return None
+        
+        self._advance_tokens()
+        # Mientras el token siguiente no sea }
+        while not self._current_token.token_type == TokenType.ENDASPER \
+                    and not self._current_token.token_type == TokenType.EOF:
+
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+            self._advance_tokens()
 
         return block_statement
 

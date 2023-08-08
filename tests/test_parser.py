@@ -589,6 +589,37 @@ class ParserTest(TestCase):
         self.assertIsInstance(asperdo.options, Block)
         self.assertEquals(len(asperdo.options.statements), 6)
 
+    def test_asper_othermode(self) -> None:
+        source: str = '''
+        Segun var hacer
+            1:
+                a;
+            2: 
+                b;
+            DeOtroModo:
+                c;
+        FinSegun
+        '''
+        lexer: Lexer = Lexer(source)
+        parser: Parser = Parser(lexer)
+
+        program: Program = parser.parse_program()
+
+        # Test correct node type
+        asperdo = cast(Asperdo, cast(ExpressionStatement, program.statements[0]).expression)
+        self.assertIsInstance(asperdo, Asperdo)
+
+        assert asperdo.letNumeric is not None
+        self._test_literal_expression(asperdo.letNumeric, 'var')
+
+        assert asperdo.options is not None
+        self.assertIsInstance(asperdo.options, Block)
+        self.assertEquals(len(asperdo.options.statements), 6)
+
+        assert asperdo.otherMode is not None
+        self.assertIsInstance(asperdo.otherMode, Block)
+        self.assertEquals(len(asperdo.otherMode.statements), 1)
+
 
 'Programa uno Mientras (i < 10) hacer Si (a < b) Entonces Si (x < y) Entonces 9*8/6-5/9/78*23; FinSi FinSi FinMientras Para i=0 hasta a c=c+1; Para a=1 hasta b a; FinPara FinPara FinPrograma'
 

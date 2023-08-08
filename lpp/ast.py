@@ -280,12 +280,12 @@ class StartProgram(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Programa'
+        out: str = f'Programa '
 
         if self.name:
-            out += f' {str(self.name)} {str(self.body)} FinPrograma '
+            out += f'{str(self.name)} {str(self.body)} FinPrograma '
         else:
-            out += f' {str(self.body)} FinPrograma '
+            out += f'{str(self.body)} FinPrograma '
 
         return ''.join(out)
     
