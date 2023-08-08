@@ -57,21 +57,38 @@ class Lexer:
           literal = self._read_identifier()  # 5
           token_type = lookup_token_type(literal) # INT
           return Token(token_type, literal)
+      
       elif self._is_number(self._character):
           literal = self._read_number()
-
           if self._character == ".":
               self._read_character()
               sufix = self._read_number()
               return Token(TokenType.FLOAT, f"{literal}.{sufix}")
-
           return Token(TokenType.INT, literal)
+      elif match(r'^"$', self._character):
+            literal = self._read_string()
+            return Token(TokenType.STRING, literal)
       else:
         token = Token(TokenType.ILLEGAL, self._character)
 
       self._read_character()
 
       return token
+    
+    def _read_string(self) -> str:
+        self._read_character()
+
+        initial_position = self._position
+
+        while self._character != '"' \
+                and self._read_position <= len(self._source):
+            self._read_character()
+
+        string = self._source[initial_position:self._position]
+
+        self._read_character()
+
+        return string
 
     def _read_character(self) -> None:
       if self._read_position >= len(self._source):

@@ -16,6 +16,9 @@ from lpp.ast import (
     Forto,
     StartProgram,
     Asperdo,
+    StringLiteral,
+    LetExpression,
+    Write,
 )
 from lpp.lexer import Lexer
 from lpp.parser import Parser
@@ -155,6 +158,15 @@ class ParserTest(TestCase):
         identifier = cast(Identifier, expression)
         self.assertEquals(identifier.value, expected_value)
         self.assertEquals(identifier.token.literal, expected_value)
+
+    def _test_string_literal(self,
+                         expression: Expression,
+                         expected_value: str) -> None:
+        self.assertIsInstance(expression, StringLiteral)
+
+        stringliteral = cast(StringLiteral, expression)
+        self.assertEquals(stringliteral.value, expected_value)
+        self.assertEquals(stringliteral.token.literal, expected_value)
     '''
 
     5;
@@ -619,6 +631,58 @@ class ParserTest(TestCase):
         assert asperdo.otherMode is not None
         self.assertIsInstance(asperdo.otherMode, Block)
         self.assertEquals(len(asperdo.otherMode.statements), 1)
+
+    def test_let_variables(self) -> None:
+        source: str = '''
+            Doble x, y, z;
+        '''
+        lexer: Lexer = Lexer(source)
+        parser: Parser = Parser(lexer)
+    
+        program: Program = parser.parse_program()
+
+        self._test_program_statements(parser, program)
+
+        letexpression = cast(LetExpression, cast(ExpressionStatement, program.statements[0]).expression)
+        self.assertIsInstance(letexpression, LetExpression)
+
+        assert letexpression.arguments is not None
+        self.assertEquals(len(letexpression.arguments), 3)
+        self._test_identifier(letexpression.arguments[0], 'x')
+        self._test_identifier(letexpression.arguments[1], 'y')
+        self._test_identifier(letexpression.arguments[2], 'z')
+
+    def test_let_write_variables(self) -> None:
+        source: str = '''
+            Escribir "a =", a, "b =", b;
+        '''
+        lexer: Lexer = Lexer(source)
+        parser: Parser = Parser(lexer)
+    
+        program: Program = parser.parse_program()
+
+        self._test_program_statements(parser, program)
+
+        write = cast(Write, cast(ExpressionStatement, program.statements[0]).expression)
+        self.assertIsInstance(write, LetExpression)
+
+        assert write.arguments is not None
+        self.assertEquals(len(write.arguments), 4)
+        self.assertEquals(write.arguments[0], 'a =')
+        self.assertEquals(write.arguments[1], 'a')
+        self.assertEquals(write.arguments[2], 'b =')
+        self.assertEquals(write.arguments[3], 'b')
+
+    def test_string_literal_expression(self) -> None:
+        source: str = '"hello world!"'
+        lexer: Lexer = Lexer(source)
+        parser: Parser = Parser(lexer)
+        program: Program = parser.parse_program()
+
+        expression_statement = cast(ExpressionStatement, program.statements[0])
+        string_literal = cast(StringLiteral, expression_statement.expression)
+        self.assertIsInstance(string_literal, StringLiteral)
+        self.assertEquals(string_literal.value, 'hello world!')
 
 
 'Programa uno Mientras (i < 10) hacer Si (a < b) Entonces Si (x < y) Entonces 9*8/6-5/9/78*23; FinSi FinSi FinMientras Para i=0 hasta a c=c+1; Para a=1 hasta b a; FinPara FinPara FinPrograma'

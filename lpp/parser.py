@@ -16,6 +16,9 @@ from lpp.ast import (
     While,
     Forto,
     Asperdo,
+    StringLiteral,
+    LetExpression,
+    Write
     )
 from lpp.lexer import Lexer
 from lpp.token import TokenType, Token
@@ -315,6 +318,80 @@ class Parser:
 
         return expression
     
+    def _parse_let(self) -> Optional[LetExpression]:
+        assert self._current_token is not None
+        letexpression = LetExpression(token=self._current_token)
+        
+        self._advance_tokens()
+        assert self._current_token is not None
+        letexpression.arguments = self._parse_get_arguments()
+
+        return letexpression
+    
+    def _parse_get_arguments(self) -> Optional[list[Expression]]:
+        arguments: list[Expression] = []
+
+        assert self._current_token is not None
+        # Si parse_expression regresa none el if de abajo
+        # no se ejecuta
+        if expression := self._parse_expression(Precedence.LOWEST):
+            arguments.append(expression)
+
+
+        while self._peek_token.token_type == TokenType.COMMA:
+            self._advance_tokens() # Para llegar a la coma
+            self._advance_tokens() # Para llegar al otro argumento
+
+            if expression := self._parse_expression(Precedence.LOWEST):
+                arguments.append(expression)
+
+        if not self._expected_token(TokenType.SEMICOLON):
+            return None
+        
+        return arguments
+    
+    def _parse_write(self) -> Optional[Write]:
+        assert self._current_token is not None
+        letexpression = LetExpression(token=self._current_token)
+        
+        self._advance_tokens()
+        assert self._current_token is not None
+        letexpression.arguments = self._parse_write_arguments()
+
+        return letexpression
+    
+    def _parse_write_arguments(self) -> Optional[list[Expression]]:
+        arguments: list[Expression] = []
+        assert self._current_token is not None
+        # Si parse_expression regresa none el if de abajo
+        # no se ejecuta
+        if self._current_token.token_type == TokenType.IDENT:
+            expression = self._parse_identifier()
+            arguments.append(expression)
+        elif self._current_token.token_type == TokenType.STRING:
+            expression = self._parse_string_literal()
+            arguments.append(expression.value)
+        else:
+            return None
+            
+
+        while self._peek_token.token_type == TokenType.COMMA:
+            self._advance_tokens() # Para llegar a la coma
+            self._advance_tokens() # Para llegar al otro argumento
+
+            if self._current_token.token_type == TokenType.IDENT:
+                expression = self._parse_identifier()
+                arguments.append(expression.value)
+            elif self._current_token.token_type == TokenType.STRING:
+                expression = self._parse_string_literal()
+                arguments.append(expression.value)
+
+        if not self._expected_token(TokenType.SEMICOLON):
+            return None
+        
+        return arguments
+    
+    
     def _parse_block_program(self) -> Block:
         assert self._current_token is not None
         block_statement = Block(token=self._current_token,
@@ -603,8 +680,13 @@ class Parser:
             
             self._advance_tokens()
             
-
         return block_statement
+    
+    def _parse_string_literal(self) -> Expression:
+        assert self._current_token is not None
+        return StringLiteral(token=self._current_token,
+                             value=self._current_token.literal)
+     
     
     def _parse_block_asper_othermode(self) -> Block:
         assert self._current_token is not None
@@ -654,6 +736,14 @@ class Parser:
             TokenType.FOR: self._parse_forto,
             TokenType.SOP: self._parse_program,
             TokenType.ASPER: self._parse_asper,
+            TokenType.STRING: self._parse_string_literal,
+            TokenType.LETREAL: self._parse_let,
+            TokenType.LETDOUBLE: self._parse_let,
+            TokenType.LETFLOAT: self._parse_let,
+            TokenType.LETSTRING: self._parse_let,
+            TokenType.LETINT: self._parse_let,
+            TokenType.READ: self._parse_let,
+            TokenType.WRITE: self._parse_write,
         }
 
     

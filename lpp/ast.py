@@ -96,7 +96,50 @@ class LetStatement(Statement):
         self.value = value
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} {str(self.name)} = {str(self.value)};'
+        return f'{self.token_literal()} {str(self.name)} = {str(self.value)};\n'
+    
+class LetExpression(Expression):
+    def __init__(self,
+                 token: Token,
+                 arguments: Optional[list[Expression]] = None) -> None:
+        super().__init__(token)
+        self.arguments = arguments
+
+    def __str__(self) -> str:
+        assert self.arguments is not None
+        # Transformamos cada argumento a str y se vuelve una lista de str
+        arg_list: list[str] = [str(argument) for argument in self.arguments]
+        args: str = ', '.join(arg_list)
+        return f'{str(self.token.literal)} {args};\n'
+    
+class Read(Expression):
+    def __init__(self,
+                 token: Token,
+                 arguments: Optional[list[Identifier]] = None) -> None:
+        super().__init__(token)
+        self.arguments = arguments
+
+    def __str__(self) -> str:
+        assert self.arguments is not None
+        # Transformamos cada argumento a str y se vuelve una lista de str
+        arg_list: list[str] = [str(argument) for argument in self.arguments]
+        args: str = ', '.join(arg_list)
+        return f'{str(self.token.literal)} {args};\n'
+    
+class Write(Expression):
+    def __init__(self,
+                 token: Token,
+                 arguments: Optional[list[Identifier]] = None) -> None:
+        super().__init__(token)
+        self.arguments = arguments
+
+    def __str__(self) -> str:
+        assert self.arguments is not None
+        # Transformamos cada argumento a str y se vuelve una lista de str
+        arg_list: list[str] = [str(argument) for argument in self.arguments]
+        args: str = ', '.join(arg_list)
+        return f'{str(self.token.literal)} {args};\n'    
+
     
 class LetAsignment(Statement):
     def __init__(self, 
@@ -107,7 +150,7 @@ class LetAsignment(Statement):
         self.value = value
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} = {str(self.value)};'
+        return f'{self.token_literal()} = {str(self.value)}'
 
 
 class ReturnStatement(Statement):
@@ -119,7 +162,7 @@ class ReturnStatement(Statement):
         self.return_value = return_value
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} {str(self.return_value)};'
+        return f'{self.token_literal()} {str(self.return_value)}\n'
 
 
 class ExpressionStatement(Statement):
@@ -143,6 +186,17 @@ class Integer(Expression):
     def __str__(self) -> str:
         return str(self.value)
     
+class StringLiteral(Expression):
+
+    def __init__(self,
+                 token: Token,
+                 value: Optional[str] = None) -> None:
+        super().__init__(token)
+        self.value = value
+
+    def __str__(self) -> str:
+        return super().__str__()
+    
 class Prefix(Expression):
     def __init__(self,
                  token: Token,
@@ -153,7 +207,7 @@ class Prefix(Expression):
         self.right = right
 
     def __str__(self) -> str:
-        return f'({self.operator}{str(self.right)})'
+        return f'({self.operator}{str(self.right)}) MAMAGUEVO'
     
 class Infix(Expression):
     def __init__(self,
@@ -190,6 +244,7 @@ class Block(Statement):
     def __str__(self) -> str:
         # Nos genera una lista de statements conertidos a strings
         out: list[str] = [str(statement) for statement in self.statements]
+   
         
         # Concatenamos todo
         return ''.join(out)
@@ -207,12 +262,12 @@ class If(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Si {str(self.condition)} Entonces {str(self.consequence)} '
+        out: str = f'\nSi {str(self.condition)}\nEntonces\n{str(self.consequence)}\n'
         # Si hay una alternativa lo concatenamos
         if self.alternative:
-            out += f'Sino {str(self.alternative)} FinSi '
+            out += f'\nSino\n{str(self.alternative)}\nFinSi\n'
         else:
-            out += f'FinSi '
+            out += f'\nFinSi\n'
 
         return ''.join(out)
     
@@ -225,9 +280,10 @@ class While(Expression):
         self.condition = condition 
         self.actions = actions
               
-
+    
     def __str__(self) -> str:
-        out: str = f'Mientras {str(self.condition)} hacer {str(self.actions)} FinMientras '
+        without_skip = str(self.condition).replace("\n", '')
+        out: str = f'\nMientras {without_skip} hacer\n{str(self.actions)}\n\nFinMientras\n'
 
         return ''.join(out)
 
@@ -244,7 +300,7 @@ class Forto(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Para {str(self.start)} hasta {str(self.end)} {str(self.body)} FinPara '
+        out: str = f'\nPara {str(self.start)} hasta {str(self.end)}\n{str(self.body)}\nFinPara\n'
 
         return ''.join(out)
     
@@ -260,12 +316,12 @@ class Asperdo(Expression):
         self.otherMode = otherMode
 
     def __str__(self) -> str:
-        out: str = f'Segun {str(self.letNumeric)} hacer {str(self.options)} '
+        out: str = f'\nSegun {str(self.letNumeric)} hacer \n{str(self.options)}\n'
         # Si hay una alternativa lo concatenamos
         if self.otherMode:
-            out += f'DeOtroModo {str(self.otherMode)} FinSegun '
+            out += f'DeOtroModo: \n{str(self.otherMode)}\nFinSegun\n'
         else:
-            out += f'FinSegun '
+            out += f'FinSegun\n'
 
         return ''.join(out)
     
@@ -283,9 +339,11 @@ class StartProgram(Expression):
         out: str = f'Programa '
 
         if self.name:
-            out += f'{str(self.name)} {str(self.body)} FinPrograma '
+            out += f'{str(self.name)}\n{str(self.body)}\nFinPrograma'
         else:
-            out += f'{str(self.body)} FinPrograma '
+            out += f'\n{str(self.body)}\nFinPrograma'
 
         return ''.join(out)
+    
+
     
