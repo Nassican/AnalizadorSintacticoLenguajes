@@ -210,9 +210,9 @@ class If(Expression):
         out: str = f'Si {str(self.condition)} Entonces {str(self.consequence)} '
         # Si hay una alternativa lo concatenamos
         if self.alternative:
-            out += f'Sino {str(self.alternative)} FinSi'
-        elif not self.alternative:
-            out += f'FinSi'
+            out += f'Sino {str(self.alternative)} FinSi '
+        else:
+            out += f'FinSi '
 
         return ''.join(out)
     
@@ -227,7 +227,7 @@ class While(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Mientras {str(self.condition)} hacer {str(self.actions)} FinMientras'
+        out: str = f'Mientras {str(self.condition)} hacer {str(self.actions)} FinMientras '
 
         return ''.join(out)
 
@@ -244,6 +244,48 @@ class Forto(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Para {str(self.start)} hasta {str(self.end)} hacer {str(self.body)} FinPara'
+        out: str = f'Para {str(self.start)} hasta {str(self.end)} {str(self.body)} FinPara '
 
         return ''.join(out)
+    
+class Asperdo(Expression):
+    def __init__(self,
+                 token: Token,
+                 letNumeric: Optional[Identifier] = None,
+                 options: Optional[Block] = None,
+                 otherMode: Optional[Block] = None) -> None:
+        super().__init__(token)
+        self.letNumeric = letNumeric 
+        self.options = options
+        self.otherMode = otherMode
+
+    def __str__(self) -> str:
+        out: str = f'Segun {str(self.letNumeric)} hacer {str(self.options)} '
+        # Si hay una alternativa lo concatenamos
+        if self.otherMode:
+            out += f'DeOtroModo {str(self.otherMode)} FinSegun '
+        else:
+            out += f'FinSegun '
+
+        return ''.join(out)
+    
+class StartProgram(Expression):
+    def __init__(self,
+                 token: Token,
+                 name: Optional[Identifier] = None,
+                 body: Optional[Block] = None) -> None:
+        super().__init__(token)
+        self.name = name
+        self.body = body
+              
+
+    def __str__(self) -> str:
+        out: str = f'Programa'
+
+        if self.name:
+            out += f' {str(self.name)} {str(self.body)} FinPrograma '
+        else:
+            out += f' {str(self.body)} FinPrograma '
+
+        return ''.join(out)
+    
