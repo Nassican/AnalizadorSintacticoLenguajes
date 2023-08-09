@@ -41,8 +41,8 @@ class Main(QMainWindow):
         # Instaciamos nuestra ventanas widget home
         self.home = Ui_home()
         self.home.setupUi(self)
-        # icon = QIcon("./interfaz/logo.png")  # Cambia "icono.png" por la ruta a tu archivo de icono
-        # self.setWindowIcon(icon)
+        icon = QIcon("./interfaz/logo.png")  # Cambia "icono.png" por la ruta a tu archivo de icono
+        self.setWindowIcon(icon)
 
         # Eventos
         self.home.bt_lexico.clicked.connect(self.ev_lexico)
