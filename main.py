@@ -13,6 +13,7 @@
 import sys
 
 from PySide6.QtWidgets import *
+from PySide6.QtGui import QPalette, QColor, QBrush, QIcon
 
 """ Importamos todas nuetras Ventana y funciones utiles"""
 from lpp.ast import Program
@@ -33,24 +34,32 @@ def _print_parse_errors(errors: list[str]):
         print(error)
 
 class Main(QMainWindow):
-    """ Clase principal de nuestra app"""
+    'Clase principal de nuestra app'
     def __init__(self):
         """ Incializamos nuestra app"""
         QMainWindow.__init__(self)
-
+        self.setFixedSize(1110,750)
         # Instaciamos nuestra ventanas widget home
         self.home = Ui_home()
+        styles = '' 
+        self.app = QApplication.instance()
         self.home.setupUi(self)
         icon = QIcon("./interfaz/logo.png")  # Cambia "icono.png" por la ruta a tu archivo de icono
         self.setWindowIcon(icon)
-
+        self.app.setStyle(styles)
         # Eventos
         self.home.bt_lexico.clicked.connect(self.ev_lexico)
         self.home.bt_sintactico.clicked.connect(self.ev_sintactico)
+        self.home.opciones.currentIndexChanged.connect(self.aplicar_estilo)
 
         self.home.bt_archivo.clicked.connect(self.ev_archivo)
         self.home.bt_limpiar.clicked.connect(self.ev_limpiar)
-        self.home.estado.showMessage("Analizador Sintactico | Jesus David Benavides | Yorth Ortegon | Universidad de Nariño | 2023")
+        self.home.estado.showMessage("                  Analizador Sintactico | Jesus David Benavides | Yorth Ortegon | Universidad de Nariño | 2023")
+        #self.home.estado.setStyleSheet("padding-left: 20px; text-align: center; color: white;")
+
+    def aplicar_estilo(self, style_name):
+        style_name = self.home.opciones.currentText()
+        self.app.setStyle(style_name)
 
 
     def ev_lexico(self):
@@ -135,6 +144,7 @@ class Main(QMainWindow):
         self.home.tx_ingreso.setText('')
         self.home.tx_lexico.setText('')
         self.home.tx_sintactico.setText('')
+
 
 if __name__ == "__main__":
     # Instaciamos nuestro app por defecto esto no cambia

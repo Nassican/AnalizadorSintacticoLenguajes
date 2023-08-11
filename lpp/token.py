@@ -32,7 +32,7 @@ class TokenType(Enum):
     EQUALS = auto() # es ==
     NOTEQUALS = auto() # es !=
     COLON = auto() # es :
-    
+    AND = auto() # es &
     #--------------------------------
     IF = auto()     # if - Si
     THEN = auto()   # Entonces

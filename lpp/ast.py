@@ -150,7 +150,7 @@ class LetAsignment(Statement):
         self.value = value
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} = {str(self.value)}'
+        return f'{self.token_literal()} = {str(self.value)};'
 
 
 class ReturnStatement(Statement):
@@ -162,7 +162,7 @@ class ReturnStatement(Statement):
         self.return_value = return_value
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} {str(self.return_value)}\n'
+        return f'{self.token_literal()} {str(self.return_value)};'
 
 
 class ExpressionStatement(Statement):
@@ -207,7 +207,7 @@ class Prefix(Expression):
         self.right = right
 
     def __str__(self) -> str:
-        return f'({self.operator}{str(self.right)}) MAMAGUEVO'
+        return f'({self.operator}{str(self.right)})'
     
 class Infix(Expression):
     def __init__(self,

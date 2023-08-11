@@ -284,6 +284,7 @@ class ParserTest(TestCase):
             (5, '==', 5),
             (5, '!=', 5),
             (5, '=', 5),
+            (5, "&", 5,)
         ]
 
         for statement, (expected_left, expected_operator, expected_right) in zip(

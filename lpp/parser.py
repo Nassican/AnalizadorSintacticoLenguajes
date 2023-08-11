@@ -54,11 +54,12 @@ InfixParseFns = dict[TokenType, InfixParseFn]
 class Precedence(IntEnum):
     LOWEST = 1              # Presencia mas baja
     EQUALS = 2              # Presencia mas alta
-    LESSGREATER = 3         # Mas o menos
-    SUM = 4                 # Si tenemos una suma y luego un less greater primero se hace la suma
-    PRODUCT = 5             # Primero el producto
-    PREFIX = 6              # Prefijo
-    CALL = 7                # Llamada a funcion
+    EQUALSMAJOR = 3
+    LESSGREATER = 4         # Mas o menos
+    SUM = 5                 # Si tenemos una suma y luego un less greater primero se hace la suma
+    PRODUCT = 6             # Primero el producto
+    PREFIX = 7              # Prefijo
+    CALL = 8                # Llamada a funcion
 
 PRECEDENCES: dict[TokenType, Precedence] = {
     TokenType.EQUALS: Precedence.EQUALS,
@@ -70,6 +71,7 @@ PRECEDENCES: dict[TokenType, Precedence] = {
     TokenType.DIVIDE: Precedence.PRODUCT,
     TokenType.MULT: Precedence.PRODUCT,
     TokenType.ASSIGN: Precedence.EQUALS,
+    TokenType.AND: Precedence.EQUALSMAJOR,
     TokenType.COLON: Precedence.EQUALS,
 }
 
@@ -337,7 +339,7 @@ class Parser:
         if expression := self._parse_expression(Precedence.LOWEST):
             arguments.append(expression)
 
-
+    
         while self._peek_token.token_type == TokenType.COMMA:
             self._advance_tokens() # Para llegar a la coma
             self._advance_tokens() # Para llegar al otro argumento
@@ -372,6 +374,12 @@ class Parser:
             expression = self._parse_string_literal()
             arguments.append(expression.value)
         else:
+            print('''
+    **************************************************\n
+    * Escribir no tiene variables ni cadenas validas *\n
+    **************************************************\n
+                  ''')
+
             return None
             
 
@@ -711,6 +719,7 @@ class Parser:
 
     def _register_infix_parse_fns(self) -> InfixParseFns:
         return {
+            TokenType.AND: self._parse_infix_expression,
             TokenType.PLUS: self._parse_infix_expression,
             TokenType.MINUS: self._parse_infix_expression,
             TokenType.DIVIDE: self._parse_infix_expression,
