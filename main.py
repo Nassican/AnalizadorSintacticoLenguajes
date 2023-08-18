@@ -54,7 +54,7 @@ class Main(QMainWindow):
 
         self.home.bt_archivo.clicked.connect(self.ev_archivo)
         self.home.bt_limpiar.clicked.connect(self.ev_limpiar)
-        self.home.estado.showMessage("                  Analizador Sintactico | Jesus David Benavides | Yorth Ortegon | Universidad de Nariño | 2023")
+        self.home.estado.showMessage("Analizador Sintactico | Jesus David Benavides | Yorth Ortegon | Valeria Miramag | Universidad de Nariño | 2023")
         #self.home.estado.setStyleSheet("padding-left: 20px; text-align: center; color: white;")
 
     def aplicar_estilo(self, style_name):
@@ -116,9 +116,10 @@ class Main(QMainWindow):
 
         if len(parser.errors) > 0:
             cadena += '\n\nERRORES: ' + str(parser.errors)
-        # mostramos en pantalla
-
+        # mostramos en pantalla 
+        
         self.home.tx_sintactico.setText(cadena)
+        
 
     def ev_archivo(self):
         '''
@@ -144,6 +145,7 @@ class Main(QMainWindow):
         self.home.tx_ingreso.setText('')
         self.home.tx_lexico.setText('')
         self.home.tx_sintactico.setText('')
+
 
 
 if __name__ == "__main__":

@@ -257,7 +257,7 @@ class Ui_home(QMainWindow):
         # Boton de analisis sintactico
         self.horizontalOpciones.setGeometry(QRect(20, 20, 100, 60))
         self.opciones = QComboBox(self.horizontalOpciones)
-        self.opciones.addItems(["Default","Fusion", "Windows", "dark_fusion", "white_fusion"])
+        self.opciones.addItems(["Default","Fusion", "Windows"])
 
         home.setCentralWidget(self.centralWidget)
         self.estado = QStatusBar(home)

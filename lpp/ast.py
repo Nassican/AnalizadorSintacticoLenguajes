@@ -26,7 +26,6 @@ class ASTNode(ABC):
 # 2 Es un nodo de un AST
 # Nunca vamos a inicializar Statement de forma directa, la vamos a inicializar de forma extensiva
 
-
 class Statement(ASTNode):
     def __init__(self, token: Token) -> None:
         self.token = token
@@ -37,7 +36,6 @@ class Statement(ASTNode):
 
 # 3 Es un nodo de un AST
 
-
 class Expression(ASTNode):
     def __init__(self, token: Token) -> None:
         self.token = token
@@ -46,7 +44,6 @@ class Expression(ASTNode):
         return self.token.literal
 
 # Esta es la definicion del programa
-
 
 class Program(ASTNode):
 
@@ -74,6 +71,7 @@ class Program(ASTNode):
 # LEctura de arriba hacia abajo (de Python)
 
 
+
 class Identifier(Expression):
     def __init__(self,
                  token: Token,
@@ -83,7 +81,6 @@ class Identifier(Expression):
 
     def __str__(self) -> str:
         return self.value
-
 
 class LetStatement(Statement):
     def __init__(self, 
@@ -98,7 +95,7 @@ class LetStatement(Statement):
     def __str__(self) -> str:
         return f'{self.token_literal()} {str(self.name)} = {str(self.value)};\n'
     
-class LetExpression(Expression):
+class LetExpression(Statement):
     def __init__(self,
                  token: Token,
                  arguments: Optional[list[Expression]] = None) -> None:
@@ -129,7 +126,7 @@ class Read(Expression):
 class Write(Expression):
     def __init__(self,
                  token: Token,
-                 arguments: Optional[list[Identifier]] = None) -> None:
+                 arguments: Optional[list[Expression]] = None) -> None:
         super().__init__(token)
         self.arguments = arguments
 
@@ -139,19 +136,6 @@ class Write(Expression):
         arg_list: list[str] = [str(argument) for argument in self.arguments]
         args: str = ', '.join(arg_list)
         return f'{str(self.token.literal)} {args};\n'    
-
-    
-class LetAsignment(Statement):
-    def __init__(self, 
-                 token: Token, 
-                 value: Optional[Expression] = None) -> None:
-        # Estamos extendiendo Statement
-        super().__init__(token)
-        self.value = value
-
-    def __str__(self) -> str:
-        return f'{self.token_literal()} = {str(self.value)};'
-
 
 class ReturnStatement(Statement):
 
@@ -164,7 +148,6 @@ class ReturnStatement(Statement):
     def __str__(self) -> str:
         return f'{self.token_literal()} {str(self.return_value)};'
 
-
 class ExpressionStatement(Statement):
     def __init__(self,
                  token: Token,
@@ -174,7 +157,6 @@ class ExpressionStatement(Statement):
 
     def __str__(self) -> str:
         return str(self.expression)
-
 
 class Integer(Expression):
     def __init__(self,

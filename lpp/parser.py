@@ -31,7 +31,6 @@ from enum import IntEnum
 
 global open
 
-
 # Prefix Parse Funcion no recibe parametros y opcionalmente regresa una expresion, para eso es el Optional, si falla solo regrese un None
 PrefixParseFn = Callable[[], Optional[Expression]]
 # Infix Parse Funcion recibe una lista de expresiones como parametro y opcionalmente regresa una expresion
@@ -47,7 +46,7 @@ InfixParseFns = dict[TokenType, InfixParseFn]
             2 + 2
         El operador se encuentra entre dos elementos   
 '''
-
+    
 
 
 # El precedence de mas alto valor se evalua primero
@@ -189,33 +188,6 @@ class Parser:
             self._advance_tokens()
 
         return expression_statement
-        
-
-    def _parse_let_statement(self) -> Optional[LetStatement]:
-        assert self._current_token is not None
-
-        let_statement = LetStatement(token=self._current_token)
-
-        # Si el token no es identificador ya fallo
-        if not self._expected_token(TokenType.IDENT):
-            return None
-        
-        let_statement.name = self._parse_identifier()
-
-        # Si el siguiente token no es asignacion '=' fallo
-        if not self._expected_token(TokenType.ASSIGN):
-            return None
-        
-        # TODO terminar cuando sepa parsear expresiones
-
-        self._advance_tokens()
-        let_statement.value = self._parse_expression(Precedence.LOWEST)
-
-        assert self._peek_token is not None
-        if self._peek_token.token_type == TokenType.SEMICOLON:
-            self._advance_tokens() # Avanzamos uno mas adelante para terminar de parsear
-
-        return let_statement
 
 
     def _parse_statement(self) -> Optional[Statement]:
@@ -354,7 +326,7 @@ class Parser:
     
     def _parse_write(self) -> Optional[Write]:
         assert self._current_token is not None
-        letexpression = LetExpression(token=self._current_token)
+        letexpression = Write(token=self._current_token)
         
         self._advance_tokens()
         assert self._current_token is not None
@@ -362,7 +334,7 @@ class Parser:
 
         return letexpression
     
-    def _parse_write_arguments(self) -> Optional[list[Expression]]:
+    def _parse_write_arguments(self) -> Optional[list[Identifier]]:
         arguments: list[Expression] = []
         assert self._current_token is not None
         # Si parse_expression regresa none el if de abajo
@@ -373,16 +345,18 @@ class Parser:
         elif self._current_token.token_type == TokenType.STRING:
             expression = self._parse_string_literal()
             arguments.append(expression.value)
+        elif self._current_token.token_type == TokenType.INT:
+            expression = self._parse_integer()
+            arguments.append(expression.value)
+        elif self._current_token.token_type == TokenType.ILLEGAL:
+            errortext = "ERROR en Escribir, al parecer tiene un token ilegal, verifique el texto"
+            self._errors.append(errortext)
+            return f'E'
         else:
-            print('''
-    **************************************************\n
-    * Escribir no tiene variables ni cadenas validas *\n
-    **************************************************\n
-                  ''')
-
-            return None
-            
-
+            errortext = "ERROR en Escribir, al parecer tiene un fallo, verifique el texto"
+            self._errors.append(errortext)
+            return f'E'
+        
         while self._peek_token.token_type == TokenType.COMMA:
             self._advance_tokens() # Para llegar a la coma
             self._advance_tokens() # Para llegar al otro argumento
@@ -393,12 +367,24 @@ class Parser:
             elif self._current_token.token_type == TokenType.STRING:
                 expression = self._parse_string_literal()
                 arguments.append(expression.value)
+            elif self._current_token.token_type == TokenType.INT:
+                expression = self._parse_integer()
+                arguments.append(expression.value)
+            elif self._current_token.token_type == TokenType.ILLEGAL:
+                errortext = "ERROR en Escribir, al parecer tiene un token ilegal, verifique el texto"
+                self._errors.append(errortext)
+                return f'E'
+            else:
+                errortext = "ERROR en Escribir, al parecer tiene un fallo, verifique el texto"
+                self._errors.append(errortext)
+                return f'E'
 
         if not self._expected_token(TokenType.SEMICOLON):
-            return None
+            errortext = "ERROR en Escribir, no hay final de escribir ( ; )"
+            self._errors.append(errortext)
+            return f'E'
         
         return arguments
-    
     
     def _parse_block_program(self) -> Block:
         assert self._current_token is not None
@@ -433,8 +419,6 @@ class Parser:
             self._advance_tokens()
 
         return block_statement
-    
-    
     
     def _parse_block_if_else(self) -> Block: # Para el Sino --- FinSi
         assert self._current_token is not None
@@ -493,7 +477,6 @@ class Parser:
             self._advance_tokens()
 
         return block_statement
-
 
     def _parse_if(self) -> Optional[If]:
         assert self._current_token is not None
@@ -592,7 +575,6 @@ class Parser:
         
         return while_expression
         
-    
     def _parse_forto(self) -> Optional[Forto]:
         assert self._current_token is not None
         forto_expression = Forto(token=self._current_token)
@@ -693,8 +675,7 @@ class Parser:
     def _parse_string_literal(self) -> Expression:
         assert self._current_token is not None
         return StringLiteral(token=self._current_token,
-                             value=self._current_token.literal)
-     
+                             value=self._current_token.literal) 
     
     def _parse_block_asper_othermode(self) -> Block:
         assert self._current_token is not None
@@ -715,7 +696,6 @@ class Parser:
             self._advance_tokens()
 
         return block_statement
-
 
     def _register_infix_parse_fns(self) -> InfixParseFns:
         return {
@@ -754,5 +734,3 @@ class Parser:
             TokenType.READ: self._parse_let,
             TokenType.WRITE: self._parse_write,
         }
-
-    
