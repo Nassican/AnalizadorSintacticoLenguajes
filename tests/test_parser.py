@@ -22,7 +22,7 @@ from typing import cast
 # Para hacer los tests
 
 # Generamos nuestro programa como un nodo del ast
-
+# Esto es para que el test sepa que es un programa
 
 class ParserTest(TestCase):
 
