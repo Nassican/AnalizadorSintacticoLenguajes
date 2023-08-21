@@ -35,7 +35,7 @@ class ASTTest(TestCase):
 
         program_str = str(program)
 
-        self.assertEquals(program_str, 'variable mi_var = otra_var;')
+        self.assertEquals(program_str, 'variable mi_var = otra_var;\n')
 
     def test_let_assignment(self) -> None:
         # 'variable mi_var = otra_var;' <- Es un LetStatement porque es una declaracion de varibale

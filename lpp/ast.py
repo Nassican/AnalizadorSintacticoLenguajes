@@ -26,7 +26,6 @@ class ASTNode(ABC):
 # 2 Es un nodo de un AST
 # Nunca vamos a inicializar Statement de forma directa, la vamos a inicializar de forma extensiva
 
-
 class Statement(ASTNode):
     def __init__(self, token: Token) -> None:
         self.token = token
@@ -37,7 +36,6 @@ class Statement(ASTNode):
 
 # 3 Es un nodo de un AST
 
-
 class Expression(ASTNode):
     def __init__(self, token: Token) -> None:
         self.token = token
@@ -46,7 +44,6 @@ class Expression(ASTNode):
         return self.token.literal
 
 # Esta es la definicion del programa
-
 
 class Program(ASTNode):
 
@@ -74,6 +71,7 @@ class Program(ASTNode):
 # LEctura de arriba hacia abajo (de Python)
 
 
+
 class Identifier(Expression):
     def __init__(self,
                  token: Token,
@@ -83,7 +81,6 @@ class Identifier(Expression):
 
     def __str__(self) -> str:
         return self.value
-
 
 class LetStatement(Statement):
     def __init__(self, 
@@ -96,19 +93,49 @@ class LetStatement(Statement):
         self.value = value
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} {str(self.name)} = {str(self.value)};'
+        return f'{self.token_literal()} {str(self.name)} = {str(self.value)};\n'
     
-class LetAsignment(Statement):
-    def __init__(self, 
-                 token: Token, 
-                 value: Optional[Expression] = None) -> None:
-        # Estamos extendiendo Statement
+class LetExpression(Statement):
+    def __init__(self,
+                 token: Token,
+                 arguments: Optional[list[Expression]] = None) -> None:
         super().__init__(token)
-        self.value = value
+        self.arguments = arguments
 
     def __str__(self) -> str:
-        return f'{self.token_literal()} = {str(self.value)};'
+        assert self.arguments is not None
+        # Transformamos cada argumento a str y se vuelve una lista de str
+        arg_list: list[str] = [str(argument) for argument in self.arguments]
+        args: str = ', '.join(arg_list)
+        return f'{str(self.token.literal)} {args};\n'
+    
+class Read(Expression):
+    def __init__(self,
+                 token: Token,
+                 arguments: Optional[list[Identifier]] = None) -> None:
+        super().__init__(token)
+        self.arguments = arguments
 
+    def __str__(self) -> str:
+        assert self.arguments is not None
+        # Transformamos cada argumento a str y se vuelve una lista de str
+        arg_list: list[str] = [str(argument) for argument in self.arguments]
+        args: str = ', '.join(arg_list)
+        return f'{str(self.token.literal)} {args};\n'
+    
+class Write(Expression):
+    def __init__(self,
+                 token: Token,
+                 arguments: Optional[list[Expression]] = None) -> None:
+        super().__init__(token)
+        self.arguments = arguments
+
+    def __str__(self) -> str:
+        assert self.arguments is not None
+        # Transformamos cada argumento a str y se vuelve una lista de str
+        arg_list: list[str] = [str(argument) for argument in self.arguments]
+        args: str = ', '.join(arg_list)
+        return f'{str(self.token.literal)} {args};\n'    
 
 class ReturnStatement(Statement):
 
@@ -121,7 +148,6 @@ class ReturnStatement(Statement):
     def __str__(self) -> str:
         return f'{self.token_literal()} {str(self.return_value)};'
 
-
 class ExpressionStatement(Statement):
     def __init__(self,
                  token: Token,
@@ -132,7 +158,6 @@ class ExpressionStatement(Statement):
     def __str__(self) -> str:
         return str(self.expression)
 
-
 class Integer(Expression):
     def __init__(self,
                  token: Token,
@@ -142,6 +167,17 @@ class Integer(Expression):
 
     def __str__(self) -> str:
         return str(self.value)
+    
+class StringLiteral(Expression):
+
+    def __init__(self,
+                 token: Token,
+                 value: Optional[str] = None) -> None:
+        super().__init__(token)
+        self.value = value
+
+    def __str__(self) -> str:
+        return super().__str__()
     
 class Prefix(Expression):
     def __init__(self,
@@ -190,6 +226,7 @@ class Block(Statement):
     def __str__(self) -> str:
         # Nos genera una lista de statements conertidos a strings
         out: list[str] = [str(statement) for statement in self.statements]
+   
         
         # Concatenamos todo
         return ''.join(out)
@@ -207,12 +244,12 @@ class If(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Si {str(self.condition)} Entonces {str(self.consequence)} '
+        out: str = f'\nSi {str(self.condition)}\nEntonces\n{str(self.consequence)}\n'
         # Si hay una alternativa lo concatenamos
         if self.alternative:
-            out += f'Sino {str(self.alternative)} FinSi'
-        elif not self.alternative:
-            out += f'FinSi'
+            out += f'\nSino\n{str(self.alternative)}\nFinSi\n'
+        else:
+            out += f'\nFinSi\n'
 
         return ''.join(out)
     
@@ -225,9 +262,10 @@ class While(Expression):
         self.condition = condition 
         self.actions = actions
               
-
+    
     def __str__(self) -> str:
-        out: str = f'Mientras {str(self.condition)} hacer {str(self.actions)} FinMientras'
+        without_skip = str(self.condition).replace("\n", '')
+        out: str = f'\nMientras {without_skip} hacer\n{str(self.actions)}\n\nFinMientras\n'
 
         return ''.join(out)
 
@@ -244,6 +282,50 @@ class Forto(Expression):
               
 
     def __str__(self) -> str:
-        out: str = f'Para {str(self.start)} hasta {str(self.end)} hacer {str(self.body)} FinPara'
+        out: str = f'\nPara {str(self.start)} hasta {str(self.end)}\n{str(self.body)}\nFinPara\n'
 
         return ''.join(out)
+    
+class Asperdo(Expression):
+    def __init__(self,
+                 token: Token,
+                 letNumeric: Optional[Identifier] = None,
+                 options: Optional[Block] = None,
+                 otherMode: Optional[Block] = None) -> None:
+        super().__init__(token)
+        self.letNumeric = letNumeric 
+        self.options = options
+        self.otherMode = otherMode
+
+    def __str__(self) -> str:
+        out: str = f'\nSegun {str(self.letNumeric)} hacer \n{str(self.options)}\n'
+        # Si hay una alternativa lo concatenamos
+        if self.otherMode:
+            out += f'DeOtroModo: \n{str(self.otherMode)}\nFinSegun\n'
+        else:
+            out += f'FinSegun\n'
+
+        return ''.join(out)
+    
+class StartProgram(Expression):
+    def __init__(self,
+                 token: Token,
+                 name: Optional[Identifier] = None,
+                 body: Optional[Block] = None) -> None:
+        super().__init__(token)
+        self.name = name
+        self.body = body
+              
+
+    def __str__(self) -> str:
+        out: str = f'Programa '
+
+        if self.name:
+            out += f'{str(self.name)}\n{str(self.body)}\nFinPrograma'
+        else:
+            out += f'\n{str(self.body)}\nFinPrograma'
+
+        return ''.join(out)
+    
+
+    

@@ -156,15 +156,15 @@ class LexerTest(TestCase):
         source: str = '''
             Si (5 < 10) 
                 Entonces
-                    retorna verdadero;
+                    x + 2;
                 Sino 
-                    retorna falso;
+                    y + 2;
             FinSi
             
         '''
         lexer: Lexer = Lexer(source)
         tokens: list[Token] = []
-        for i in range(15):
+        for i in range(17):
             tokens.append(lexer.next_token())
         
         expected_tokens: list[Token] = [
@@ -175,12 +175,14 @@ class LexerTest(TestCase):
             Token(TokenType.INT, '10'),
             Token(TokenType.RPAREN, ')'),
             Token(TokenType.THEN, 'Entonces'),
-            Token(TokenType.RETURN, 'retorna'),
-            Token(TokenType.TRUE, 'verdadero'),
+            Token(TokenType.IDENT, 'x'),
+            Token(TokenType.PLUS, '+'),
+            Token(TokenType.INT, '2'),
             Token(TokenType.SEMICOLON, ';'),
             Token(TokenType.ELSE, 'Sino'),
-            Token(TokenType.RETURN, 'retorna'),
-            Token(TokenType.FALSE, 'falso'),
+            Token(TokenType.IDENT, 'y'),
+            Token(TokenType.PLUS, '+'),
+            Token(TokenType.INT, '2'),
             Token(TokenType.SEMICOLON, ';'),
             Token(TokenType.ENDIF, 'FinSi'),
         ]

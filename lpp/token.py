@@ -32,7 +32,7 @@ class TokenType(Enum):
     EQUALS = auto() # es ==
     NOTEQUALS = auto() # es !=
     COLON = auto() # es :
-    
+    AND = auto() # es &
     #--------------------------------
     IF = auto()     # if - Si
     THEN = auto()   # Entonces
@@ -51,11 +51,17 @@ class TokenType(Enum):
     OTHERMODE = auto()
     ENDASPER = auto()   # FinSegun
     #--------------------------------
-    REAL = auto()   # Es un real
-    INT = auto()    # Es un entero
-    FLOAT = auto()  # Es un float
-    STRING = auto() # Es un string
-    DOUBLE = auto() # Es un double
+    REAL = auto()   # Es un # real
+    INT = auto()    # Es un # entero
+    FLOAT = auto()  # Es un # float
+    STRING = auto() # Es un # string
+    DOUBLE = auto() # Es un # double
+    #--------------------------------
+    LETREAL = auto()   # Es un # real
+    LETINT = auto()    # Es un # entero
+    LETFLOAT = auto()  # Es un # float
+    LETSTRING = auto() # Es un # string
+    LETDOUBLE = auto() # Es un # double
     #--------------------------------
     READ = auto()
     WRITE = auto()
@@ -63,11 +69,6 @@ class TokenType(Enum):
     SOP = auto()
     EOP = auto()
     #--------------------------------
-
-
-
-
-
 
 class Token(NamedTuple):
     token_type: TokenType
@@ -107,11 +108,11 @@ def lookup_token_type(literal: str) -> TokenType:
         'DeOtroModo': TokenType.OTHERMODE,   # OK
         'FinSegun': TokenType.ENDASPER,     # OK 
         #--------------------VARIABLES----------------------------------
-        'Real': TokenType.REAL,             # OK
-        'Entero': TokenType.INT,            # Ya estaba el INT ---
-        'Double': TokenType.DOUBLE,         # OK
-        'Float': TokenType.FLOAT,           # Ya estaba el FLOAT ---
-        'String': TokenType.STRING,         # OK
+        'Real': TokenType.LETREAL,             # OK
+        'Entero': TokenType.LETINT,         # OK
+        'Doble': TokenType.LETDOUBLE,         # OK
+        'Flotante': TokenType.LETFLOAT,           # Ya estaba el FLOAT ---
+        'Cadena': TokenType.LETSTRING,         # OK
         #--------------------ACCIONES----------------------------------
         'Leer': TokenType.READ,             # OK
         'Escribir': TokenType.WRITE,         # OK
@@ -121,12 +122,27 @@ def lookup_token_type(literal: str) -> TokenType:
 
     }
 
-    '''
+    return keywords.get(literal, TokenType.IDENT)
+
+'''
+Real x, y, z;
+Entero x, y, z;
+Doble x, y, z;
+Cadena x, y, z;
+Flotante x, y, z;
+
 
     OK      Programa      -> Es SOP
     OK      FinPrograma   -> Es EOP.
 
-    OK      Tipo -> Real, Entero, Double, Float, String
+    OK      Tipo -> 
+
+    Real, 
+    Entero, 
+    Double, 
+    Float, 
+    String
+
     OK      Leer
     OK      Escribir
     OK      Si
@@ -142,6 +158,4 @@ def lookup_token_type(literal: str) -> TokenType:
     OK      Hacer
     OK      FinSegun
 
-    '''
-
-    return keywords.get(literal, TokenType.IDENT)
+'''

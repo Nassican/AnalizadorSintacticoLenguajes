@@ -1,0 +1,43 @@
+Programa uno
+
+Entero a, b, c, i;
+Real x,y,x;
+
+Leer a,b,c;
+
+i=0;
+a=0;
+
+Mientras (i<10) hacer
+	Si (a<b) Entonces
+		a=a+i;
+		Si (x<y) Entonces
+			a=b+c;
+		FinSi
+		b=b+i;
+	FinSi
+	i=i+1;
+FinMientras
+
+Para i=0 hasta a
+       c=c+i;
+       Para a=1 hasta b 
+	Escribir a;
+      FinPara
+FinPara
+
+Leer i;
+
+Segun i hacer
+	1:
+		i=i+a;
+	2:
+		i=i+b;
+	
+	DeOtroModo:
+		Escribir "Valor ",i,"  no valido ";
+FinSegun
+
+Escribir "a =", a, "b = ", b;
+
+FinPrograma

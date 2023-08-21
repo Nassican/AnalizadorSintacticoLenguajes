@@ -1,4 +1,5 @@
 from lpp.ast import (
+    StartProgram,
     Program, 
     Statement, 
     LetStatement, 
@@ -14,6 +15,10 @@ from lpp.ast import (
     If,
     While,
     Forto,
+    Asperdo,
+    StringLiteral,
+    LetExpression,
+    Write
     )
 from lpp.lexer import Lexer
 from lpp.token import TokenType, Token
@@ -24,7 +29,7 @@ from enum import IntEnum
     Parser es el Analizador Lexico en Python
 '''
 
-
+global open
 
 # Prefix Parse Funcion no recibe parametros y opcionalmente regresa una expresion, para eso es el Optional, si falla solo regrese un None
 PrefixParseFn = Callable[[], Optional[Expression]]
@@ -41,18 +46,19 @@ InfixParseFns = dict[TokenType, InfixParseFn]
             2 + 2
         El operador se encuentra entre dos elementos   
 '''
-
+    
 
 
 # El precedence de mas alto valor se evalua primero
 class Precedence(IntEnum):
     LOWEST = 1              # Presencia mas baja
     EQUALS = 2              # Presencia mas alta
-    LESSGREATER = 3         # Mas o menos
-    SUM = 4                 # Si tenemos una suma y luego un less greater primero se hace la suma
-    PRODUCT = 5             # Primero el producto
-    PREFIX = 6              # Prefijo
-    CALL = 7                # Llamada a funcion
+    EQUALSMAJOR = 3
+    LESSGREATER = 4         # Mas o menos
+    SUM = 5                 # Si tenemos una suma y luego un less greater primero se hace la suma
+    PRODUCT = 6             # Primero el producto
+    PREFIX = 7              # Prefijo
+    CALL = 8                # Llamada a funcion
 
 PRECEDENCES: dict[TokenType, Precedence] = {
     TokenType.EQUALS: Precedence.EQUALS,
@@ -63,7 +69,9 @@ PRECEDENCES: dict[TokenType, Precedence] = {
     TokenType.MINUS: Precedence.SUM,
     TokenType.DIVIDE: Precedence.PRODUCT,
     TokenType.MULT: Precedence.PRODUCT,
-    TokenType.ASSIGN: Precedence.CALL,
+    TokenType.ASSIGN: Precedence.EQUALS,
+    TokenType.AND: Precedence.EQUALSMAJOR,
+    TokenType.COLON: Precedence.EQUALS,
 }
 
 
@@ -126,6 +134,16 @@ class Parser:
         self._expected_token_error(token_type)
         return False
     
+    def _expected_current_token(self, token_type: TokenType) -> bool:
+        assert self._current_token is not None
+
+        if self._current_token.token_type == token_type:
+            
+            return True  
+        # Aqui se le pasa el error
+        self._expected_token_error(token_type)
+        return False
+    
     def _expected_token_error(self, token_type: TokenType) -> None:
         assert self._peek_token is not None
         error = f'Se esperaba que el siguiente token fuera {token_type} ' + \
@@ -170,33 +188,6 @@ class Parser:
             self._advance_tokens()
 
         return expression_statement
-        
-
-    def _parse_let_statement(self) -> Optional[LetStatement]:
-        assert self._current_token is not None
-
-        let_statement = LetStatement(token=self._current_token)
-
-        # Si el token no es identificador ya fallo
-        if not self._expected_token(TokenType.IDENT):
-            return None
-        
-        let_statement.name = self._parse_identifier()
-
-        # Si el siguiente token no es asignacion '=' fallo
-        if not self._expected_token(TokenType.ASSIGN):
-            return None
-        
-        # TODO terminar cuando sepa parsear expresiones
-
-        self._advance_tokens()
-        let_statement.value = self._parse_expression(Precedence.LOWEST)
-
-        assert self._peek_token is not None
-        if self._peek_token.token_type == TokenType.SEMICOLON:
-            self._advance_tokens() # Avanzamos uno mas adelante para terminar de parsear
-
-        return let_statement
 
 
     def _parse_statement(self) -> Optional[Statement]:
@@ -300,18 +291,146 @@ class Parser:
             return None
 
         return expression
+    
+    def _parse_let(self) -> Optional[LetExpression]:
+        assert self._current_token is not None
+        letexpression = LetExpression(token=self._current_token)
+        
+        self._advance_tokens()
+        assert self._current_token is not None
+        letexpression.arguments = self._parse_get_arguments()
 
-    def _parse_block(self) -> Block:
+        return letexpression
+    
+    def _parse_get_arguments(self) -> Optional[list[Expression]]:
+        arguments: list[Expression] = []
+
+        assert self._current_token is not None
+        # Si parse_expression regresa none el if de abajo
+        # no se ejecuta
+        if expression := self._parse_expression(Precedence.LOWEST):
+            arguments.append(expression)
+
+    
+        while self._peek_token.token_type == TokenType.COMMA:
+            self._advance_tokens() # Para llegar a la coma
+            self._advance_tokens() # Para llegar al otro argumento
+
+            if expression := self._parse_expression(Precedence.LOWEST):
+                arguments.append(expression)
+
+        if not self._expected_token(TokenType.SEMICOLON):
+            return None
+        
+        return arguments
+    
+    def _parse_write(self) -> Optional[Write]:
+        assert self._current_token is not None
+        letexpression = Write(token=self._current_token)
+        
+        self._advance_tokens()
+        assert self._current_token is not None
+        letexpression.arguments = self._parse_write_arguments()
+
+        return letexpression
+    
+    def _parse_write_arguments(self) -> Optional[list[Identifier]]:
+        arguments: list[Expression] = []
+        assert self._current_token is not None
+        # Si parse_expression regresa none el if de abajo
+        # no se ejecuta
+        if self._current_token.token_type == TokenType.IDENT:
+            expression = self._parse_identifier()
+            arguments.append(expression)
+        elif self._current_token.token_type == TokenType.STRING:
+            expression = self._parse_string_literal()
+            arguments.append(expression.value)
+        elif self._current_token.token_type == TokenType.INT:
+            expression = self._parse_integer()
+            arguments.append(expression.value)
+        elif self._current_token.token_type == TokenType.ILLEGAL:
+            errortext = "ERROR en Escribir, al parecer tiene un token ilegal, verifique el texto"
+            self._errors.append(errortext)
+            return f'E'
+        else:
+            errortext = "ERROR en Escribir, al parecer tiene un fallo, verifique el texto"
+            self._errors.append(errortext)
+            return f'E'
+        
+        while self._peek_token.token_type == TokenType.COMMA:
+            self._advance_tokens() # Para llegar a la coma
+            self._advance_tokens() # Para llegar al otro argumento
+
+            if self._current_token.token_type == TokenType.IDENT:
+                expression = self._parse_identifier()
+                arguments.append(expression.value)
+            elif self._current_token.token_type == TokenType.STRING:
+                expression = self._parse_string_literal()
+                arguments.append(expression.value)
+            elif self._current_token.token_type == TokenType.INT:
+                expression = self._parse_integer()
+                arguments.append(expression.value)
+            elif self._current_token.token_type == TokenType.ILLEGAL:
+                errortext = "ERROR en Escribir, al parecer tiene un token ilegal, verifique el texto"
+                self._errors.append(errortext)
+                return f'E'
+            else:
+                errortext = "ERROR en Escribir, al parecer tiene un fallo, verifique el texto"
+                self._errors.append(errortext)
+                return f'E'
+
+        if not self._expected_token(TokenType.SEMICOLON):
+            errortext = "ERROR en Escribir, no hay final de escribir ( ; )"
+            self._errors.append(errortext)
+            return f'E'
+        
+        return arguments
+    
+    def _parse_block_program(self) -> Block:
         assert self._current_token is not None
         block_statement = Block(token=self._current_token,
+                                statements=[])
+        self._advance_tokens()
+
+        # Mientras el token siguiente no sea FinMientras 
+        while not self._current_token.token_type == TokenType.EOP \
+            and not self._current_token.token_type == TokenType.EOF:
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+
+            self._advance_tokens()
+
+        return block_statement
+
+    def _parse_block_if(self) -> Block:
+        assert self._current_token is not None
+        block_statement = Block(token=self._current_token,
+                                statements=[])
+        self._advance_tokens()
+
+        # Mientras el token actual no sea FinMientras 
+        while not (self._current_token.token_type == TokenType.ELSE or self._current_token.token_type == TokenType.ENDIF) \
+            and not self._current_token.token_type == TokenType.EOF:
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+
+            self._advance_tokens()
+
+        return block_statement
+    
+    def _parse_block_if_else(self) -> Block: # Para el Sino --- FinSi
+        assert self._current_token is not None
+        block_statement = Block(token=TokenType.ELSE,
                                 statements=[])
         
         self._advance_tokens()
 
         # Mientras el token siguiente no sea }
-        while not self._current_token.token_type == TokenType.RBRACE \
-                    and not self._current_token.token_type == TokenType.EOF \
-                        and not self._current_token.token_type == TokenType.ENDIF:
+        while not self._peek_token.token_type == TokenType.EOF \
+            and not self._peek_token.token_type == TokenType.ENDIF:
+                    
             statement = self._parse_statement()
 
             if statement:
@@ -328,9 +447,9 @@ class Parser:
         
         self._advance_tokens()
 
-        # Mientras el token siguiente no sea }
+        # Mientras el token siguiente no sea FinMientras 
         while not self._current_token.token_type == TokenType.ENDWHILE \
-                    and not self._current_token.token_type == TokenType.EOF:
+            and not self._peek_token.token_type == TokenType.EOF:
             statement = self._parse_statement()
 
             if statement:
@@ -359,49 +478,77 @@ class Parser:
 
         return block_statement
 
-
     def _parse_if(self) -> Optional[If]:
         assert self._current_token is not None
-        if_expression = If(token=self._current_token)
-
+        if_expression = If(token=self._current_token) # 'Si'
         # Comprobamos que el token esperado sea un ( despues del si
         # en caso contrario habria un error de sintaxis
-        if not self._expected_token(TokenType.LPAREN):
+        if not self._expected_token(TokenType.LPAREN): # (
             return None
-        
         self._advance_tokens()
 
-        if_expression.condition = self._parse_expression(Precedence.LOWEST)
+        if_expression.condition = self._parse_expression(Precedence.LOWEST) 
 
         # Comprobamos que se cerro el parentesis )
         if not self._expected_token(TokenType.RPAREN):
             return None
         
-        if not self._expected_token(TokenType.THEN):
+        if not self._expected_token(TokenType.THEN): # Entonces
             return None
         
-        if not self._expected_token(TokenType.LBRACE):
-            return None
-        
-        if_expression.consequence = self._parse_block()
+        if_expression.consequence = self._parse_block_if()
         # Hasta aqui funciona con una sola condicion
-
         # Aqui funciona con el si_no
-        assert self._peek_token is not None
-        if self._peek_token.token_type == TokenType.ELSE:
-            self._advance_tokens()
 
-            if not self._expected_token(TokenType.LBRACE):
+        assert self._current_token is not None
+        if self._current_token.token_type == TokenType.ELSE:
+            if_expression.alternative = self._parse_block_if_else()
+
+            if not self._expected_current_token(TokenType.ENDIF):
                 return None
 
-            if_expression.alternative = self._parse_block()
-
-        if not self._expected_token(TokenType.ENDIF):
+            return if_expression
+            
+        if not self._expected_current_token(TokenType.ENDIF):
             return None
 
         return if_expression
     
+    '''
+    FUNCIONA MEDIO BIEN
+    assert self._peek_token is not None
+        if self._current_token.token_type == TokenType.ELSE:
+            if_expression.alternative = self._parse_block_if_else()
+
+            return if_expression
+    
+    '''
+
+    def _parse_program(self) -> Optional[StartProgram]:
+        assert self._current_token is not None
+        program = StartProgram(token=self._current_token)
+        if self._current_token.token_type == TokenType.SOP:
+            open = True
+
+        assert self._peek_token is not None
+        if not self._peek_token.token_type == TokenType.IDENT:
+            program.body = self._parse_block_program()
+
+        if self._peek_token.token_type == TokenType.IDENT:
+            self._advance_tokens()
+            program.name = self._parse_identifier()
+            program.body = self._parse_block_program()
+
+            
+        if not self._expected_current_token(TokenType.EOP):
+            return None
+
+        self._advance_tokens()
+
+        return program
+    
     def _parse_while(self) -> Optional[While]:
+        
         assert self._current_token is not None
         while_expression = While(token=self._current_token)
 
@@ -410,7 +557,7 @@ class Parser:
         if not self._expected_token(TokenType.LPAREN):
             return None
         
-        self._advance_tokens()
+        self._advance_tokens() # x + y
 
         while_expression.condition = self._parse_expression(Precedence.LOWEST)
 
@@ -418,13 +565,16 @@ class Parser:
         if not self._expected_token(TokenType.RPAREN):
             return None
         
-        if not self._expected_token(TokenType.DO):
+        if not self._expected_token(TokenType.DO): # hacer
             return None
         
         while_expression.actions = self._parse_block_while()
 
+        if not self._expected_current_token(TokenType.ENDWHILE):
+            return None
+        
         return while_expression
-    
+        
     def _parse_forto(self) -> Optional[Forto]:
         assert self._current_token is not None
         forto_expression = Forto(token=self._current_token)
@@ -442,16 +592,114 @@ class Parser:
 
         forto_expression.end = self._parse_expression(Precedence.LOWEST)
 
-
-
         assert self._peek_token is not None
         forto_expression.body = self._parse_block_forto()
 
-        return forto_expression
+        if not self._expected_current_token(TokenType.ENDFOR):
+            return None
 
+        return forto_expression
+    
+    def _parse_asper(self) -> Optional[Asperdo]:
+        assert self._current_token is not None
+        asper = Asperdo(token=self._current_token)
+
+        # Comprobamos que el token esperado sea un ( despues del si
+        # en caso contrario habria un error de sintaxis
+        assert self._peek_token is not None
+        self._advance_tokens()
+
+        asper.letNumeric = self._parse_expression(Precedence.LOWEST)
+
+        if not self._expected_token(TokenType.DO):
+            return None
+        
+        asper.options = self._parse_block_asper_options()  
+
+        assert self._current_token is not None
+
+        if self._current_token.token_type == TokenType.OTHERMODE:
+            asper.otherMode = self._parse_block_asper_othermode()
+
+            if not self._expected_current_token(TokenType.ENDASPER):
+                return None
+
+            return asper
+            
+        if not self._expected_current_token(TokenType.ENDASPER):
+            return None  
+        
+        return asper
+    
+    def _parse_block_asper_options(self) -> Block:
+        assert self._current_token is not None
+        block_statement = Block(token=self._current_token,
+                                statements=[])
+        
+        self._advance_tokens()
+
+        # Mientras el token siguiente no sea }
+        while not (self._current_token.token_type == TokenType.ENDASPER or self._current_token.token_type == TokenType.OTHERMODE)\
+                    and not self._current_token.token_type == TokenType.EOF:
+            
+            assert self._current_token is not None
+            # Comprueba que la opcion sea solo de tipo Entero
+            if not self._expected_current_token(TokenType.INT):
+                return None
+            
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+
+            self._advance_tokens()
+
+            # Comprueba que despues del tipo Entero habia un :
+            # if self._current_token.token_type == TokenType.COLON:
+            #     block_statement.statements.append(':')
+            #     self._advance_tokens()
+            if not self._expected_current_token(TokenType.COLON):
+                return None
+            
+            block_statement.statements.append(':')
+            self._advance_tokens()
+
+            assert self._current_token is not None
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+            
+            self._advance_tokens()
+            
+        return block_statement
+    
+    def _parse_string_literal(self) -> Expression:
+        assert self._current_token is not None
+        return StringLiteral(token=self._current_token,
+                             value=self._current_token.literal) 
+    
+    def _parse_block_asper_othermode(self) -> Block:
+        assert self._current_token is not None
+        block_statement = Block(token=self._current_token,
+                                statements=[])
+        
+        if not self._expected_token(TokenType.COLON):
+            return None
+        
+        self._advance_tokens()
+        # Mientras el token siguiente no sea }
+        while not self._current_token.token_type == TokenType.ENDASPER \
+                    and not self._current_token.token_type == TokenType.EOF:
+
+            statement = self._parse_statement()
+            if statement:
+                block_statement.statements.append(statement)
+            self._advance_tokens()
+
+        return block_statement
 
     def _register_infix_parse_fns(self) -> InfixParseFns:
         return {
+            TokenType.AND: self._parse_infix_expression,
             TokenType.PLUS: self._parse_infix_expression,
             TokenType.MINUS: self._parse_infix_expression,
             TokenType.DIVIDE: self._parse_infix_expression,
@@ -472,15 +720,17 @@ class Parser:
             TokenType.TRUE: self._parse_boolean,
             TokenType.FALSE: self._parse_boolean,
             TokenType.LPAREN: self._parse_grouped_expression,
-            # TokenType.WHILE: self.--------------------------,
-            # TokenType.ASPER: self.--------------------------,
-            # TokenType.FOR: self.--------------------------,
-            # TokenType.DO: self.--------------------------,
             TokenType.IF: self._parse_if,
-            TokenType.LBRACE: self._parse_if,
             TokenType.WHILE: self._parse_while,
             TokenType.FOR: self._parse_forto,
-
+            TokenType.SOP: self._parse_program,
+            TokenType.ASPER: self._parse_asper,
+            TokenType.STRING: self._parse_string_literal,
+            TokenType.LETREAL: self._parse_let,
+            TokenType.LETDOUBLE: self._parse_let,
+            TokenType.LETFLOAT: self._parse_let,
+            TokenType.LETSTRING: self._parse_let,
+            TokenType.LETINT: self._parse_let,
+            TokenType.READ: self._parse_let,
+            TokenType.WRITE: self._parse_write,
         }
-
-    
