@@ -25,9 +25,7 @@ from lpp.parser import Parser
 from typing import cast
 
 # Para hacer los tests
-
 # Generamos nuestro programa como un nodo del ast
-
 
 class ParserTest(TestCase):
 
