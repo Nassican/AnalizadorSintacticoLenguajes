@@ -1,7 +1,7 @@
 
 # Analizador Sintactico y Lexico
 
-Analizador Lexico y Sintactico realizado por Jesus David Benavides y Yorth Ortegon.
+Analizador Lexico y Sintactico realizado por Jesus David Benavides y Yorth Ortegon y Valeria Miramag.
 
 ## Instrucciones de su uso:
 
