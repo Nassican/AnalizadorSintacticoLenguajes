@@ -79,6 +79,8 @@ class Identifier(Expression):
         super().__init__(token)
         self.value = value
 
+    # Regresa el valor del identificador (TokenType.IDENT)
+
     def __str__(self) -> str:
         return self.value
 
@@ -132,6 +134,8 @@ class Write(Expression):
 
     def __str__(self) -> str:
         assert self.arguments is not None
+        # Escribir [argumentos];
+        # argumentos -> cadena, variable(identificador)
         # Transformamos cada argumento a str y se vuelve una lista de str
         arg_list: list[str] = [str(argument) for argument in self.arguments]
         args: str = ', '.join(arg_list)
@@ -162,6 +166,16 @@ class Integer(Expression):
     def __init__(self,
                  token: Token,
                  value: Optional[int] = None) -> None:
+        super().__init__(token)
+        self.value = value
+
+    def __str__(self) -> str:
+        return str(self.value)
+    
+class Float(Expression):
+    def __init__(self,
+                 token: Token,
+                 value: Optional[float] = None) -> None:
         super().__init__(token)
         self.value = value
 

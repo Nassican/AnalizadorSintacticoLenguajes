@@ -1,8 +1,8 @@
 from lpp.ast import (
     StartProgram,
     Program, 
-    Statement, 
-    LetStatement, 
+    Statement,
+    LetStatement,
     Identifier, 
     ReturnStatement,
     Expression,
@@ -18,7 +18,8 @@ from lpp.ast import (
     Asperdo,
     StringLiteral,
     LetExpression,
-    Write
+    Write,
+    Float
     )
 from lpp.lexer import Lexer
 from lpp.token import TokenType, Token
@@ -52,27 +53,66 @@ InfixParseFns = dict[TokenType, InfixParseFn]
 # El precedence de mas alto valor se evalua primero
 class Precedence(IntEnum):
     LOWEST = 1              # Presencia mas baja
-    EQUALS = 2              # Presencia mas alta
-    EQUALSMAJOR = 3
-    LESSGREATER = 4         # Mas o menos
-    SUM = 5                 # Si tenemos una suma y luego un less greater primero se hace la suma
-    PRODUCT = 6             # Primero el producto
-    PREFIX = 7              # Prefijo
-    CALL = 8                # Llamada a funcion
+    EQUALS = 2              # Presencia mas alta ==
+    SUM = 3                 # Si tenemos una suma y luego un less greater primero se hace la suma
+    PRODUCT = 4             # Primero el producto
+    POWER = 5               # Potencia
+    LESSGREATER = 6         # Mas o menos
+    ANDLEVEL = 7            # AND
+    ORLEVEL = 8             # OR
+    PREFIX = 9              # Prefijo
+    CALL = 10               # Llamada a funcion
 
 PRECEDENCES: dict[TokenType, Precedence] = {
-    TokenType.EQUALS: Precedence.EQUALS,
-    TokenType.NOTEQUALS: Precedence.EQUALS,
+    TokenType.EQUALS: Precedence.LESSGREATER,
+    TokenType.NOTEQUALS: Precedence.LESSGREATER,
     TokenType.LT: Precedence.LESSGREATER,
     TokenType.MT: Precedence.LESSGREATER,
+    TokenType.LTEQ: Precedence.LESSGREATER,
+    TokenType.MTEQ: Precedence.LESSGREATER,
+    TokenType.POWER: Precedence.POWER,
     TokenType.PLUS: Precedence.SUM,
     TokenType.MINUS: Precedence.SUM,
     TokenType.DIVIDE: Precedence.PRODUCT,
     TokenType.MULT: Precedence.PRODUCT,
     TokenType.ASSIGN: Precedence.EQUALS,
-    TokenType.AND: Precedence.EQUALSMAJOR,
     TokenType.COLON: Precedence.EQUALS,
+    TokenType.AND: Precedence.ANDLEVEL,
+    TokenType.OR: Precedence.ORLEVEL,
 }
+
+'''
+Implementar un analizador sintáctico con procesamiento descendente en forma recursiva y 
+no recursiva de una gramática que reconozca una expresión lógico aritmética que tiene los 
+siguientes operandos:
+
+AND = &&
+OR = ||
+
+Lógicos         AND y OR
+Relacionales    <,>,>=,<=,==,!=
+Aritméticos	    +,-,*,/,^
+
+Ya estan:
+
+Aritméticos     +,-,*,/
+Relacionales    <,>,==, !=
+Lógicos         AND y OR
+
+
+Nivel de operador OR
+Nivel de operador AND
+Nivel de operadores relacionales
+Nivel de operadores aritméticos
+
+
+Nivel de paréntesis
+
+No implementado:
+6>10>50 -> No esta permitido
+6>10 && 10>50 -> Si esta permitido
+
+'''
 
 
 class Parser:
@@ -81,6 +121,8 @@ class Parser:
         self._current_token: Optional[Token] = None
         self._peek_token: Optional[Token] = None
         self._errors: list[str] = []
+
+        self.operator_count = 0
 
         # Registra toda las funciones
         self._prefix_parse_fns: PrefixParseFns = self._register_prefix_parse_fns()
@@ -105,7 +147,8 @@ class Parser:
                 program.statements.append(statement)
 
             self._advance_tokens()
-
+            
+        print(self.operator_count)
         return program
     
     # Es como el next_caracter, solo que este pasa al siguiente Token
@@ -233,6 +276,21 @@ class Parser:
         
         return integer
     
+    def _parse_float(self) -> Optional[Float]:
+        assert self._current_token is not None
+
+        floatvar = Float(token=self._current_token)
+        try:
+            floatvar.value = float(self._current_token.literal)
+        except ValueError:
+            message = f'No se ha podido parsear {self._current_token.literal}  ' + \
+                        'como float.'
+            self._errors.append(message)
+
+            return None
+        
+        return floatvar
+    
 
     # def _parse_integer(self) -> Float:
     #        pass
@@ -255,12 +313,11 @@ class Parser:
                       operator=self._current_token.literal,
                       left=left)
         
-
+        self.operator_count += 1
         # Con esto se agrupa la expresion, con la precedencia
         precedence = self._current_precedence()
 
         self._advance_tokens()
-
 
         # Recursivamente evalua la expresion y si hay un infix regresa
         # de manera recursiva
@@ -708,13 +765,20 @@ class Parser:
             TokenType.ASSIGN: self._parse_infix_expression,
             TokenType.NOTEQUALS: self._parse_infix_expression,
             TokenType.LT: self._parse_infix_expression,
+            TokenType.LTEQ: self._parse_infix_expression,
             TokenType.MT: self._parse_infix_expression,
+            TokenType.MTEQ: self._parse_infix_expression,
+            TokenType.OR: self._parse_infix_expression,
+            TokenType.POWER: self._parse_infix_expression,
         }
+    
+    # 9 || 9
     
     def _register_prefix_parse_fns(self) -> PrefixParseFns:
         return {
             TokenType.IDENT: self._parse_identifier,
             TokenType.INT: self._parse_integer,
+            TokenType.FLOAT: self._parse_float,
             TokenType.MINUS: self._parse_prefix_expression,
             TokenType.NOT: self._parse_prefix_expression,
             TokenType.TRUE: self._parse_boolean,

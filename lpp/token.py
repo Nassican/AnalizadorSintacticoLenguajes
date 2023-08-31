@@ -22,17 +22,21 @@ class TokenType(Enum):
     SEMICOLON = auto() # punto y coma ;
     RETURN = auto() # Retorna
     LT = auto() # Menor que
+    LTEQ = auto() # Menor o igual que
     MT = auto() # Mayor que
+    MTEQ = auto() # Mayor o igual que
     TRUE = auto() # verdadero
     FALSE = auto() # falso
     MINUS = auto() # Signo Menos
     DIVIDE = auto() # Signo Dividir
     MULT = auto() # Signo Multiplicacion
+    POWER = auto() # Signo Potencia
     NOT = auto() # not
     EQUALS = auto() # es ==
     NOTEQUALS = auto() # es !=
     COLON = auto() # es :
-    AND = auto() # es &
+    AND = auto() # es &&
+    OR = auto() # es ||
     #--------------------------------
     IF = auto()     # if - Si
     THEN = auto()   # Entonces
@@ -77,6 +81,8 @@ class Token(NamedTuple):
     def __str__(self) -> str: #Funcion que regresa un str
         return f'Type: {self.token_type}, literal: {self.literal}'
     
+    # 'Type: TokenType.IDENT, literal: x'
+    
 # Funcion auxiliar dentro del token que nos permite saber si 
 # estamos dentro de un keyboard o un identificador ( nombre de la variable)
 def lookup_token_type(literal: str) -> TokenType:
@@ -119,6 +125,7 @@ def lookup_token_type(literal: str) -> TokenType:
         #--------------------PROGRAMA----------------------------------
         'Programa': TokenType.SOP,
         'FinPrograma': TokenType.EOP,
+        
 
     }
 

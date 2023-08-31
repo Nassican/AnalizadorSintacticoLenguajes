@@ -36,12 +36,20 @@ class Lexer:
           token = Token(TokenType.COLON, self._character)
       elif match(r"^;$", self._character):
           token = Token(TokenType.SEMICOLON, self._character)
+      elif match(r"^\^$", self._character):
+          token = Token(TokenType.POWER, self._character)
       elif match(r"^$", self._character):
           token = Token(TokenType.EOF, self._character)
       elif match(r"^<$", self._character):
-          token = Token(TokenType.LT, self._character)
+        if self._peek_character() == '=':
+          token = self._make_two_character_token(TokenType.LTEQ) # LessThanEquals
+        else:
+          token = Token(TokenType.LT, self._character) # LessThan
       elif match(r"^>$", self._character):
-          token = Token(TokenType.MT, self._character)
+        if self._peek_character() == '=':
+          token = self._make_two_character_token(TokenType.MTEQ) # MoreThanEquals
+        else:
+          token = Token(TokenType.MT, self._character) # MoreThan
       elif match(r"^-$", self._character):
           token = Token(TokenType.MINUS, self._character)
       elif match(r"^\/$", self._character):
@@ -49,7 +57,15 @@ class Lexer:
       elif match(r"^\*$", self._character):
           token = Token(TokenType.MULT, self._character)
       elif match(r"^\&$", self._character):
-          token = Token(TokenType.AND, self._character)
+        if self._peek_character() == '&':
+          token = self._make_two_character_token(TokenType.AND)
+        else:
+          token = Token(TokenType.ILLEGAL, self._character)
+      elif match(r"^\|$", self._character):
+        if self._peek_character() == '|':
+          token = self._make_two_character_token(TokenType.OR)
+        else:
+          token = Token(TokenType.ILLEGAL, self._character)
       elif match(r"^!$", self._character):
         if self._peek_character() == '=':
             token = self._make_two_character_token(TokenType.NOTEQUALS)
